@@ -197,7 +197,7 @@ h2 { font-size: 15px; font-weight: 600; letter-spacing: .12em; text-transform: u
 .tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .tbl th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 
 @media (max-width: 420px) {
   h1 { font-size: 26px; }
@@ -222,6 +222,25 @@ h2 { font-size: 15px; font-weight: 600; letter-spacing: .12em; text-transform: u
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
 .file-in { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.ss-wrap { display: grid; gap: 8px; position: relative; padding-left: 14px; }
+.ss-wrap::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 4px; background: var(--accent); }
+.ss-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.ex-head { display: flex; gap: 8px; align-items: baseline; }
+.ex-code { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--muted); min-width: 22px; }
+.rest { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; column-gap: 6px; align-items: baseline; }
+.rest b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.rest .go { color: var(--accent); font-weight: 600; }
+.timer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--ink); color: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.timer .wrap { display: flex; align-items: center; gap: 10px; padding-block: 10px; }
+.timer .t { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; min-width: 84px; }
+.timer .lbl { flex: 1; min-width: 0; font-size: 13px; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timer .lbl b { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+.timer button { border: 1px solid color-mix(in srgb, var(--surface) 35%, transparent); background: none; color: var(--surface); border-radius: 8px; padding: 6px 9px; font-weight: 600; font-size: 13px; }
+.timer .bar { height: 3px; background: var(--accent); transform-origin: left; }
+.timer.done { background: var(--accent); color: var(--accent-ink); }
+.timer.done button { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent-ink) 35%, transparent); }
+body.timing main.wrap { padding-bottom: 120px; }
 </style>
 </head>
 <body>
@@ -240,6 +259,7 @@ h2 { font-size: 15px; font-weight: 600; letter-spacing: .12em; text-transform: u
 </header>
 <main class="wrap" id="main"><div class="empty">Loading…</div></main>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="timer" id="timer" hidden></div>
 <script>
 (() => {
 'use strict';
@@ -506,6 +526,34 @@ function renderDay() {
   $('#main').innerHTML = h;
 }
 
+// ---------- supersets & rest ----------
+// A short rest (45 s or less) means "go straight to the next exercise": that's a superset.
+const fmtRest = sec => sec == null ? '' : sec >= 60 ? `${Math.floor(sec / 60)}:${pad(sec % 60)}` : `0:${pad(sec)}`;
+function chainsFor(g) {
+  const items = g.items || [], idx = items.map((it, i) => i).filter(i => items[i].kind !== 'check' && items[i].kind !== 'run');
+  const link = new Map();
+  idx.forEach((i, k) => {
+    const r = items[i].rest;
+    if (r == null || r > 45) return;
+    const j = idx[k + 1] ?? idx[k - 1]; if (j == null) return;
+    const a = Math.min(i, j), b = Math.max(i, j); link.set(a, b);
+  });
+  const chainOf = new Map(); let c = 0;
+  for (const i of idx) {
+    if (chainOf.has(i)) continue;
+    const members = [i]; let cur = i;
+    while (link.has(cur)) { cur = link.get(cur); members.push(cur); }
+    members.forEach(m => chainOf.set(m, { id: c, members }));
+    c++;
+  }
+  return chainOf; // index -> {id, members}
+}
+function nextInChain(g, ii) {
+  const ch = chainsFor(g).get(ii); if (!ch || ch.members.length < 2) return null;
+  const k = ch.members.indexOf(ii);
+  return k < ch.members.length - 1 ? ch.members[k + 1] : null;
+}
+
 // ---------- session view ----------
 const GL = 'ABCDEFGHIJKLMNOP';
 function planText(it, p) {
@@ -549,7 +597,8 @@ function editItem(s, gi, ii, it) {
   return `<div class="card ex">
     <div class="grid2"><label class="field">Exercise<input data-ef="name" data-k="${esc(k)}" value="${esc(it.name)}" list="exList"></label>
     <label class="field">Logged as<select data-ef="kind" data-k="${esc(k)}">${['load', 'bw', 'time', 'run', 'check'].map(o => `<option value="${o}" ${it.kind === o ? 'selected' : ''}>${{ load: 'Weight × reps', bw: 'Reps only', time: 'Hold (sec)', run: 'Running / text', check: 'Tick only' }[o]}</option>`).join('')}</select></label></div>
-    <label class="field">Coaching note<input data-ef="note" data-k="${esc(k)}" value="${esc(it.note || '')}" placeholder="Tempo, side, cues"></label>
+    <div class="grid2"><label class="field">Coaching note<input data-ef="note" data-k="${esc(k)}" value="${esc(it.note || '')}" placeholder="Tempo, side, cues"></label>
+    <label class="field">Rest after each set (sec)<input data-ef="rest" data-k="${esc(k)}" inputmode="numeric" value="${esc(it.rest ?? '')}" placeholder="e.g. 120, or 30 to superset"></label></div>
     <div class="sets">${sets}</div>
     <div class="exfoot"><button class="btn sm" data-act="addSet" data-k="${esc(k)}">+ Set</button>
       <button class="btn sm ghost" data-act="mvEx" data-d="-1" data-k="${esc(k)}" aria-label="Move up">↑</button>
@@ -581,16 +630,23 @@ function renderSession() {
   h += `</div>`;
   (s.groups || []).forEach((g, gi) => {
     h += `<section class="grp"><div class="grp-h"><span class="tag">${GL[gi] || '·'}</span>${ed ? `<input class="grp-name" data-gf="name" data-k="${esc(s.id)}|${gi}" value="${esc(g.name)}" aria-label="Block name"><button class="btn sm ghost danger" data-act="rmGrp" data-k="${esc(s.id)}|${gi}">Remove</button>` : `<h2>${esc(g.name)}</h2>`}</div>`;
+    const chains = chainsFor(g); let openChain = null; let code = 0; const codes = new Map();
     (g.items || []).forEach((it, ii) => {
       if (ed) { h += editItem(s, gi, ii, it); return; }
+      const ch = chains.get(ii), inSS = ch && ch.members.length > 1;
+      if (inSS && ch.members[0] === ii) { h += `<div class="ss-wrap"><div class="ss-label">${ch.members.length === 2 ? 'Superset' : 'Circuit'}</div>`; openChain = ch; }
+      const lbl = (it.kind === 'check' || it.kind === 'run') ? '' : `${GL[gi] || ''}${++code}`; codes.set(ii, lbl);
       const lt = (it.kind === 'check' || it.kind === 'run') ? null : lastTime(it.name, s.date, s.id);
       const noteOpen = it.comment || NOTES.has(s.id + it.id);
-      h += `<div class="card ex"><div><div class="ex-name">${esc(it.name)}</div>${it.note ? `<div class="ex-note">${esc(it.note)}</div>` : ''}
-        ${lt ? `<div class="last num">Last time, ${esc(shortDate(lt.date))}: <b>${lt.sets.slice(0, 5).map(x => esc(fmtDone(x, lt.kind))).join(' · ')}</b></div>` : ''}</div>
+      const nxt = inSS ? nextInChain(g, ii) : null;
+      const restLine = it.rest != null ? `<div class="rest">Rest <b>${fmtRest(it.rest)}</b>${nxt != null ? `<span class="go">then straight to ${esc(g.items[nxt].name)}</span>` : inSS ? `<span>then back to ${esc(codes.get(ch.members[0]))}</span>` : ''}</div>` : '';
+      h += `<div class="card ex"><div><div class="ex-head">${lbl ? `<span class="ex-code">${lbl}</span>` : ''}<div class="ex-name">${esc(it.name)}</div></div>${it.note ? `<div class="ex-note">${esc(it.note)}</div>` : ''}
+        ${lt ? `<div class="last num">Last time, ${esc(shortDate(lt.date))}: <b>${lt.sets.slice(0, 5).map(x => esc(fmtDone(x, lt.kind))).join(' · ')}</b></div>` : ''}${restLine}</div>
         ${colHead(it.kind)}<div class="sets">${it.sets.map((st, si) => setRow(s, gi, ii, it, si, st, lt)).join('')}</div>
         ${s.readOnly ? (it.sets.some(x => x.done && x.done.note) ? `<div class="ex-note">${it.sets.filter(x => x.done && x.done.note).map(x => esc(x.done.note)).join(' · ')}</div>` : '') : `<div class="exfoot"><button class="btn sm ghost" data-act="addSet" data-k="${esc(s.id)}|${gi}|${ii}">+ Set</button>${noteOpen ? '' : `<button class="btn sm ghost" data-act="note" data-k="${esc(s.id + it.id)}">+ Note</button>`}</div>
         ${noteOpen ? `<textarea class="note-in" id="note-${esc(s.id + it.id)}" data-cf="comment" data-k="${esc(s.id)}|${gi}|${ii}" rows="1" placeholder="Note for this exercise" aria-label="Note for ${esc(it.name)}">${esc(it.comment || '')}</textarea>` : ''}`}
       </div>`;
+      if (openChain && openChain.members.at(-1) === ii) { h += `</div>`; openChain = null; }
     });
     if (ed) h += `<button class="btn sm" data-act="addEx" data-k="${esc(s.id)}|${gi}">+ Exercise in ${esc(g.name)}</button>`;
     h += `</section>`;
@@ -824,6 +880,8 @@ document.addEventListener('click', async e => {
     S.sessions.set(id, { id, date: S.date, title: 'New session', focus: 'MOD', phase: '', week: '', status: 'planned', notes: null, groups: [{ name: 'FORCE', items: [] }], sessionRpe: null, minutes: null, comment: null, order: 9 });
     touch(id); S.open = id; S.edit = true; render(); window.scrollTo(0, 0); return;
   }
+  if (act === 'restSkip') { stopRest(); return; }
+  if (act === 'restAdd') { T.end += Number(v) * 1000; T.total = Math.max(T.total, Math.ceil((T.end - Date.now()) / 1000)); drawTimer(); return; }
   if (act === 'pick') { const el = $({ plan: '#filePlan', lumin: '#fileLumin', restore: '#fileRestore' }[v]); if (el) { el.value = ''; el.click(); } return; }
   if (act === 'backup') { backup(); return; }
   if (act === 'export') { exportCsv(v === 'all'); return; }
@@ -845,6 +903,15 @@ document.addEventListener('click', async e => {
       if (it.kind === 'time') { if (d.sec == null) d.sec = p.sec ?? null; if (d.kg == null && p.kg != null) d.kg = p.kg; }
       d.ok = true;
       if (s.status === 'planned') s.status = 'in_progress';
+      if (it.rest > 0) {
+        const g = s.groups[gi], nxt = nextInChain(g, ii);
+        const chain = chainsFor(g).get(ii);
+        let label;
+        if (nxt != null) label = `Next: ${g.items[nxt].name}`;
+        else if (chain && chain.members.length > 1) label = `Next: ${g.items[chain.members[0]].name}, set ${Math.min(si + 2, g.items[chain.members[0]].sets.length)}`;
+        else label = si + 1 < it.sets.length ? `Next: ${it.name}, set ${si + 2}` : 'Next exercise';
+        startRest(it.rest, label);
+      }
     } else d.ok = false;
     st.done = d; touch(id); buildIndex(); rerenderKeepScroll(); return;
   }
@@ -901,7 +968,7 @@ document.addEventListener('input', e => {
     const f = t.dataset.pf; p[f] = f === 't' ? t.value : f === 'r' ? (t.value === '' ? null : (/^\d+$/.test(t.value) ? +t.value : t.value)) : numOrNull(t.value);
     touch(id); return;
   }
-  if (t.dataset.ef && t.tagName === 'INPUT') { const { id, s, gi, ii } = ref(t.dataset.k); if (!s) return; s.groups[gi].items[ii][t.dataset.ef] = t.value || (t.dataset.ef === 'name' ? '' : null); touch(id); return; }
+  if (t.dataset.ef && t.tagName === 'INPUT') { const { id, s, gi, ii } = ref(t.dataset.k); if (!s) return; const f = t.dataset.ef; s.groups[gi].items[ii][f] = f === 'rest' ? numOrNull(t.value) : (t.value || (f === 'name' ? '' : null)); touch(id); return; }
   if (t.dataset.gf) { const { id, s, gi } = ref(t.dataset.k); if (!s) return; s.groups[gi].name = t.value; touch(id); return; }
   if (t.dataset.sf && t.dataset.sf !== 'date' && t.tagName !== 'SELECT') {
     const s = getSession(sid); if (!s || s.readOnly) return;
@@ -927,6 +994,37 @@ document.addEventListener('change', async e => {
   if (t.dataset.sf === 'focus') { s.focus = t.value; touch(sid); return; }
   if (t.dataset.sf === 'date' && t.value) { s.date = t.value; S.date = t.value; touch(sid); renderWeek(); return; }
 });
+
+// ---------- rest timer ----------
+const T = { end: 0, total: 0, label: '', iv: null, ctx: null, doneAt: 0 };
+function beep() {
+  try {
+    T.ctx = T.ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = T.ctx.createOscillator(), g = T.ctx.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(0.0001, T.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.25, T.ctx.currentTime + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, T.ctx.currentTime + 0.5);
+    o.connect(g); g.connect(T.ctx.destination); o.start(); o.stop(T.ctx.currentTime + 0.55);
+  } catch {}
+}
+function startRest(sec, label) {
+  try { T.ctx = T.ctx || new (window.AudioContext || window.webkitAudioContext)(); if (T.ctx.state === 'suspended') T.ctx.resume(); } catch {}
+  T.total = sec; T.end = Date.now() + sec * 1000; T.label = label; T.doneAt = 0;
+  clearInterval(T.iv); T.iv = setInterval(drawTimer, 250); drawTimer();
+}
+function stopRest() { clearInterval(T.iv); T.iv = null; $('#timer').hidden = true; document.body.classList.remove('timing'); }
+function drawTimer() {
+  const el = $('#timer'), left = Math.ceil((T.end - Date.now()) / 1000);
+  el.hidden = false; document.body.classList.add('timing');
+  if (left <= 0) {
+    if (!T.doneAt) { T.doneAt = Date.now(); beep(); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {} }
+    if (Date.now() - T.doneAt > 4000) { stopRest(); return; }
+    el.className = 'timer done';
+    el.innerHTML = `<div class="wrap"><span class="t">Go</span><span class="lbl"><b>Rest done</b>${esc(T.label)}</span><button data-act="restSkip">Close</button></div>`;
+    return;
+  }
+  el.className = 'timer';
+  el.innerHTML = `<div class="bar" style="transform:scaleX(${Math.max(0, left / T.total)})"></div><div class="wrap"><span class="t" role="timer" aria-live="off">${fmtRest(left)}</span><span class="lbl"><b>Rest</b>${esc(T.label)}</span><button data-act="restAdd" data-v="15" aria-label="15 seconds more">+15</button><button data-act="restSkip">Skip</button></div>`;
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && T.iv) drawTimer(); });
 
 // ---------- boot ----------
 async function askPersist() {
