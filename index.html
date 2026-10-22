@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Training Log</title>
+<meta name="description" content="Day-by-day training plan and set log. Data stays on this device.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161e1a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Training">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-width column; sticky week strip on top, the day's work below, a session opens in place. */
+:root {
+  --bg: #eef1ed;
+  --surface: #ffffff;
+  --surface-2: #f6f8f5;
+  --ink: #15211b;
+  --muted: #5d6b63;
+  --line: #d9dfd8;
+  --accent: #1d6b48;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe4;
+  --good: #2f8a52;
+  --warn: #b7791f;
+  --bad: #c2412d;
+  --good-soft: #e1f2e6;
+  --warn-soft: #f8ecd6;
+  --bad-soft: #f7e0db;
+  --lumin: #6b5fb5;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1411; --surface: #161e1a; --surface-2: #1b2520; --ink: #e5ede8; --muted: #95a59c; --line: #2a3530;
+    --accent: #4dbb86; --accent-ink: #0b1510; --accent-soft: #1d3a2c;
+    --good: #5cc283; --warn: #e2a84b; --bad: #ec7a65; --good-soft: #1d3527; --warn-soft: #3a2f1b; --bad-soft: #3d221d; --lumin: #a99ef0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1411; --surface: #161e1a; --surface-2: #1b2520; --ink: #e5ede8; --muted: #95a59c; --line: #2a3530;
+  --accent: #4dbb86; --accent-ink: #0b1510; --accent-soft: #1d3a2c;
+  --good: #5cc283; --warn: #e2a84b; --bad: #ec7a65; --good-soft: #1d3527; --warn-soft: #3a2f1b; --bad-soft: #3d221d; --lumin: #a99ef0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; -webkit-text-size-adjust: 100%; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top .wrap { padding-block: 10px 8px; display: grid; gap: 8px; }
+.bar { display: flex; align-items: center; gap: 8px; }
+.brand { white-space: nowrap; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .02em; text-transform: uppercase; margin-right: auto; }
+.brand span { color: var(--accent); }
+.tabs { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tabs button { border: 0; background: none; padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.save { font-size: 12px; color: var(--muted); min-width: 0; flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grp-name { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.save.err { color: var(--bad); }
+
+.week { display: grid; grid-template-columns: 28px repeat(7, 1fr) 28px; gap: 4px; align-items: stretch; }
+.week .nav { border: 0; background: none; color: var(--muted); font-size: 18px; border-radius: 8px; }
+.day { border: 1px solid transparent; background: none; border-radius: 10px; padding: 4px 0 6px; display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.day .dw { font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.day .dn { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1; }
+.day .dots { display: flex; gap: 3px; height: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.dot.done { background: var(--good); border-color: var(--good); }
+.dot.skip { border-color: var(--bad); }
+.dot.lumin { background: var(--lumin); border-color: var(--lumin); }
+.day.today .dn { color: var(--accent); }
+.day[aria-current="date"] { background: var(--ink); color: var(--surface); }
+.day[aria-current="date"] .dw { color: var(--surface); opacity: .75; }
+.day[aria-current="date"] .dn { color: var(--surface); }
+.day[aria-current="date"] .dot:not(.done):not(.lumin) { border-color: var(--surface); }
+
+main.wrap { padding-block: 16px 64px; display: grid; gap: 16px; }
+h1, h2, h3 { margin: 0; font-family: var(--font-display); text-wrap: balance; }
+h1 { font-size: 30px; font-weight: 700; line-height: 1.05; letter-spacing: .01em; }
+h2 { font-size: 15px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.sub { color: var(--muted); font-size: 14px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { margin-left: auto; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); }
+.pill.HIGH { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.pill.MOD { border-color: var(--ink); color: var(--ink); }
+.pill.lumin { color: var(--lumin); border-color: var(--lumin); }
+.pill.done { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.pill.skipped { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 14px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+.btn.danger { color: var(--bad); }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* check-in */
+.check h3 { font-size: 18px; }
+.scale { display: grid; grid-template-columns: repeat(11, 1fr); gap: 3px; }
+.scale button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 5px 0; font-weight: 600; font-size: 13px; min-width: 0; }
+.scale button.z-g[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.scale button.z-a[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #fff; }
+.scale button.z-r[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
+.test { display: grid; gap: 4px; }
+.test label { font-size: 13px; font-weight: 600; }
+.test small { color: var(--muted); font-weight: 400; }
+.verdict { border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.verdict b { font-family: var(--font-display); letter-spacing: .06em; text-transform: uppercase; margin-right: 6px; }
+.verdict.g { background: var(--good-soft); color: var(--good); }
+.verdict.a { background: var(--warn-soft); color: var(--warn); }
+.verdict.r { background: var(--bad-soft); color: var(--bad); }
+.verdict.n { background: var(--surface-2); color: var(--muted); }
+
+/* session list */
+.sess { text-align: left; width: 100%; cursor: pointer; }
+.sess h3 { font-size: 21px; font-weight: 600; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--good); border-radius: 999px; }
+.groups { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.empty { text-align: center; color: var(--muted); padding: 28px 14px; border: 1.5px dashed var(--line); border-radius: var(--r); display: grid; gap: 10px; justify-items: center; }
+
+/* session view */
+.shead { display: grid; gap: 6px; }
+.grp { display: grid; gap: 10px; }
+.grp-h { display: flex; align-items: center; gap: 10px; }
+.grp-h .tag { font-family: var(--font-display); font-weight: 700; font-size: 15px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; background: var(--ink); color: var(--surface); }
+.grp-h h2 { color: var(--ink); }
+.ex { gap: 8px; }
+.ex-name { font-weight: 600; font-size: 16px; line-height: 1.25; }
+.ex-note { font-size: 13px; color: var(--muted); }
+.last { font-size: 12.5px; color: var(--muted); }
+.last b { color: var(--ink); font-weight: 600; }
+.sets { display: grid; gap: 6px; }
+.set { display: grid; align-items: center; gap: 6px; grid-template-columns: 22px minmax(64px, 1fr) repeat(3, minmax(0, 62px)) 40px; }
+.set.k-bw { grid-template-columns: 22px minmax(64px, 1fr) repeat(2, minmax(0, 62px)) 40px; }
+.set.k-time { grid-template-columns: 22px minmax(64px, 1fr) repeat(2, minmax(0, 62px)) 40px; }
+.set.k-run { grid-template-columns: 22px minmax(0, 1fr) 40px; }
+.set.k-check { grid-template-columns: minmax(0, 1fr) 40px; }
+.set .n { font-family: var(--font-display); font-weight: 600; color: var(--muted); text-align: center; }
+.set .plan { font-size: 14px; min-width: 0; }
+.set .plan b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.set .plan .u { color: var(--muted); font-size: 12px; }
+.set .plan div.u { line-height: 1.1; letter-spacing: .04em; }
+.set input { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px; padding: 6px 6px; text-align: center; font-variant-numeric: tabular-nums; }
+.set input.txt { text-align: left; }
+.set input::placeholder { color: var(--muted); opacity: .7; }
+.tick { width: 40px; height: 34px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 16px; color: var(--muted); }
+.tick[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.set.ok .plan { color: var(--muted); }
+.colh { display: grid; gap: 6px; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.colh span { text-align: center; }
+.runwrap { grid-column: 2 / 3; display: grid; gap: 4px; min-width: 0; }
+.exfoot { display: flex; gap: 6px; flex-wrap: wrap; }
+.note-in { width: 100%; border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px; padding: 6px 8px; min-height: 36px; resize: vertical; }
+.finish { background: var(--surface-2); }
+.rpe { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.rpe button { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 0; font-weight: 600; min-width: 0; }
+.rpe button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.field { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 7px 9px; font-weight: 400; min-width: 0; width: 100%; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.edit-set { display: grid; grid-template-columns: 22px repeat(4, minmax(0, 1fr)) 30px; gap: 4px; align-items: center; }
+.edit-set input { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px; min-width: 0; width: 100%; font-size: 13px; }
+.edit-set.wide { grid-template-columns: 22px minmax(0, 1fr) 30px; }
+.x { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; }
+.banner { border-radius: 8px; padding: 8px 12px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+.readonly-note { font-size: 13px; color: var(--lumin); }
+
+/* progress */
+.chart { width: 100%; height: auto; display: block; }
+.chart text { font-family: var(--font-body); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.stat .v { font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.1; }
+.stat .l { font-size: 12px; color: var(--muted); }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+
+@media (max-width: 420px) {
+  h1 { font-size: 26px; }
+  .brand { font-size: 18px; }
+  .tabs button { padding: 4px 10px; }
+  .set { grid-template-columns: 18px minmax(52px, 1fr) repeat(3, minmax(0, 52px)) 36px; gap: 4px; }
+  .set.k-bw, .set.k-time { grid-template-columns: 18px minmax(52px, 1fr) repeat(2, minmax(0, 56px)) 36px; }
+  .set.k-run { grid-template-columns: 18px minmax(0, 1fr) 36px; }
+  .tick { width: 36px; }
+  .stat .v { font-size: 20px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress i { transition: width .3s ease; }
+  .tick { transition: background .15s ease, border-color .15s ease; }
+}
+
+.data-actions { display: grid; gap: 8px; }
+.data-actions .btn { text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.data-actions .btn span { color: var(--muted); font-weight: 400; font-size: 13px; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.file-in { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">Training <span>Log</span></div>
+      <div class="tabs" role="group" aria-label="View">
+        <button id="tabDay" data-act="tab" data-v="day" aria-pressed="true">Day</button>
+        <button id="tabProg" data-act="tab" data-v="progress" aria-pressed="false">Progress</button>
+        <button id="tabData" data-act="tab" data-v="data" aria-pressed="false">Data</button>
+      </div>
+    </div>
+    <div class="week" id="week"></div>
+  </div>
+</header>
+<main class="wrap" id="main"><div class="empty">Loading…</div></main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+(() => {
+'use strict';
+// ---------- helpers ----------
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const monday = s => { const d = parse(s); const w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); return iso(d); };
+let TODAY = iso(new Date());
+const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const longDate = s => { const d = parse(s); return `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}`; };
+const shortDate = s => { const d = parse(s); return `${d.getDate()} ${MO[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ' ' + String(d.getFullYear()).slice(2) : ''}`; };
+const clone = o => JSON.parse(JSON.stringify(o));
+const numOrNull = v => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
+const fmtKg = n => n == null ? '' : (Math.round(n * 100) / 100).toString();
+const repsNum = r => { if (r == null) return null; const m = String(r).match(/\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
+const uidGen = () => 'x' + Math.random().toString(36).slice(2, 9);
+let toastT;
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2800); };
+const pref = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ---------- on-device storage (IndexedDB) ----------
+const idb = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('training-log', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        d.createObjectStore('sessions', { keyPath: 'id' });
+        d.createObjectStore('checkins', { keyPath: 'date' });
+        d.createObjectStore('history', { keyPath: 'id' });
+        d.createObjectStore('meta', { keyPath: 'k' });
+      };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  all(store) {
+    return new Promise((res, rej) => { const r = this.db.transaction(store).objectStore(store).getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  },
+  write(stores, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(stores, 'readwrite');
+      fn(name => t.objectStore(name));
+      t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    });
+  },
+  put(store, v) { return this.write([store], os => os(store).put(v)); },
+  del(store, k) { return this.write([store], os => os(store).delete(k)); }
+};
+
+// ---------- state ----------
+const S = {
+  view: 'day', date: TODAY, open: null, edit: false,
+  sessions: new Map(), lumin: [], checkins: new Map(),
+  ready: false, storeError: false, persisted: null,
+  progEx: pref.get('progEx') || 'DL Hip Thrust',
+  meta: {}
+};
+const NOTES = new Set();
+const timers = new Map();
+
+function getSession(id) {
+  if (id.startsWith('lumin:')) return S.lumin.find(s => s.id === id);
+  return S.sessions.get(id);
+}
+function sessionsOn(date) {
+  const own = [...S.sessions.values()].filter(s => s.date === date)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title));
+  return [...own, ...S.lumin.filter(s => s.date === date)];
+}
+function setCount(s) {
+  let total = 0, done = 0;
+  for (const g of s.groups || []) for (const it of g.items || []) for (const st of it.sets || []) { total++; if (st.done && st.done.ok) done++; }
+  return { total, done };
+}
+const hasLogged = s => (s.groups || []).some(g => (g.items || []).some(it => (it.sets || []).some(st => st.done && (st.done.ok || st.done.kg != null || st.done.reps != null || st.done.note))));
+
+// ---------- saving ----------
+function touch(id) {
+  const s = S.sessions.get(id); if (!s) return;
+  s.updatedAt = new Date().toISOString();
+  clearTimeout(timers.get(id));
+  timers.set(id, setTimeout(() => { timers.delete(id); save(id); }, 350));
+}
+async function save(id) {
+  const s = S.sessions.get(id);
+  try { if (s) await idb.put('sessions', clone(s)); else await idb.del('sessions', id); }
+  catch (e) { toast(e && e.name === 'QuotaExceededError' ? 'Phone storage is full. Free some space, then try again.' : 'Could not save to this phone. Export a backup to be safe.'); }
+}
+function flushAll() { for (const [id, t] of timers) { clearTimeout(t); timers.delete(id); save(id); } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAll(); else { const t = iso(new Date()); if (t !== TODAY) { TODAY = t; render(); } } });
+window.addEventListener('pagehide', flushAll);
+async function saveCheckin(date, data) {
+  S.checkins.set(date, data);
+  try { await idb.put('checkins', data); } catch { toast('Could not save the check-in.'); }
+}
+
+// ---------- Lumin history ----------
+function luminToSessions(raw) {
+  return raw.map(s => {
+    const groups = []; const gi = new Map();
+    for (const e of s.ex) {
+      if (!gi.has(e.g)) { gi.set(e.g, { name: e.g, items: [] }); groups.push(gi.get(e.g)); }
+      const anyKg = e.s.some(x => x[2] != null && x[2] > 0), anySec = e.s.some(x => x[4] != null);
+      const kind = anyKg ? 'load' : anySec ? 'time' : e.s.some(x => x[1] != null || x[3] != null) ? 'bw' : 'check';
+      gi.get(e.g).items.push({ id: 'l' + gi.get(e.g).items.length, name: e.n, kind, sets: e.s.map(x => ({
+        plan: { r: x[1], sec: kind === 'time' ? x[4] : null },
+        done: { kg: x[2], reps: x[3] ?? (x[6] === 'c' ? x[1] : null), sec: x[4], rpe: x[5], note: x[7] || null, ok: x[6] !== 's' }
+      })) });
+    }
+    return { id: s.id, date: s.d, title: s.n, phase: s.p, week: s.b, status: s.st, groups, readOnly: true, lumin: true };
+  }).sort((a, b) => a.date.localeCompare(b.date));
+}
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+function luminFromCSV(text) {
+  const rows = parseCSV(text); const head = rows.shift() || [];
+  const col = n => head.indexOf(n);
+  const need = ['Session ID', 'Date', 'Session Name', 'Exercise Name', 'Set Number', 'Session Exercise ID'];
+  if (need.some(n => col(n) < 0)) throw new Error('This does not look like a Lumin session/set export.');
+  const C = Object.fromEntries(['Session ID', 'Date', 'Session Name', 'Phase Name', 'Block Name', 'Status', 'Exercise Name', 'Exercise Group Name', 'Set Number', 'Reps Planned', 'Reps Completed', 'Weight Lifted (kg)', 'Duration Actual (s)', 'Duration Planned (s)', 'RPE', 'Set Comments', 'Session Exercise ID', 'Group Number', 'Set Status'].map(n => [n, col(n)]));
+  const v = (r, n) => C[n] >= 0 ? r[C[n]] : '';
+  const num = s => { if (s == null || s === '') return null; const n = Number(s); return Number.isFinite(n) ? n : null; };
+  const bySession = new Map();
+  rows.forEach((r, i) => { if (r.length < head.length / 2) return; const id = v(r, 'Session ID'); if (!bySession.has(id)) bySession.set(id, []); bySession.get(id).push({ r, i }); });
+  const out = [];
+  for (const [sid, list] of bySession) {
+    list.sort((a, b) => (num(v(a.r, 'Group Number')) ?? 0) - (num(v(b.r, 'Group Number')) ?? 0) || b.i - a.i);
+    const f = list[0].r; const exs = []; const seen = new Map();
+    for (const { r } of list) {
+      const k = v(r, 'Session Exercise ID');
+      if (!seen.has(k)) { const e = { n: v(r, 'Exercise Name'), g: v(r, 'Exercise Group Name') || 'MAIN', s: [] }; seen.set(k, e); exs.push(e); }
+      const st = { completed: 'c', skipped: 's', partially_completed: 'p' }[v(r, 'Set Status')] || 'c';
+      const set = [num(v(r, 'Set Number')), num(v(r, 'Reps Planned')), num(v(r, 'Weight Lifted (kg)')), num(v(r, 'Reps Completed')), num(v(r, 'Duration Actual (s)')) ?? num(v(r, 'Duration Planned (s)')), num(v(r, 'RPE')), st];
+      const c = v(r, 'Set Comments'); if (c) set.push(c);
+      seen.get(k).s.push(set);
+    }
+    exs.forEach(e => e.s.sort((a, b) => (a[0] || 0) - (b[0] || 0)));
+    out.push({ id: 'lumin:' + sid, d: v(f, 'Date').slice(0, 10), n: v(f, 'Session Name'), p: v(f, 'Phase Name'), b: v(f, 'Block Name'), st: v(f, 'Status') === 'Completed' ? 'completed' : 'planned', ex: exs });
+  }
+  return out;
+}
+
+// exercise -> [{date, id, kind, sets}]
+let IDX = new Map();
+function buildIndex() {
+  IDX = new Map();
+  for (const s of [...S.lumin, ...S.sessions.values()]) for (const g of s.groups || []) for (const it of g.items || []) {
+    if (it.kind === 'check' || it.kind === 'run') continue;
+    const sets = (it.sets || []).filter(x => x.done && x.done.ok && (x.done.kg != null || x.done.reps != null || x.done.sec != null)).map(x => x.done);
+    if (!sets.length) continue;
+    if (!IDX.has(it.name)) IDX.set(it.name, []);
+    IDX.get(it.name).push({ date: s.date, id: s.id, kind: it.kind, sets });
+  }
+  for (const arr of IDX.values()) arr.sort((a, b) => a.date.localeCompare(b.date));
+}
+function lastTime(name, date, sid) {
+  const arr = IDX.get(name); if (!arr) return null;
+  for (let i = arr.length - 1; i >= 0; i--) if (arr[i].id !== sid && arr[i].date <= date) return arr[i];
+  return null;
+}
+const fmtDone = (d, kind) => {
+  if (kind === 'time') return `${d.sec ?? '–'} s${d.kg ? ' @ ' + fmtKg(d.kg) : ''}`;
+  if (d.kg) return `${fmtKg(d.kg)}×${d.reps ?? '–'}`;
+  return `${d.reps ?? '–'}`;
+};
+
+// ---------- week strip ----------
+function renderWeek() {
+  const m = monday(S.date);
+  let h = `<button class="nav" data-act="wk" data-v="-7" aria-label="Previous week">‹</button>`;
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(m, i), list = sessionsOn(d);
+    const dots = list.slice(0, 3).map(s => `<span class="dot ${s.lumin ? 'lumin' : s.status === 'completed' ? 'done' : s.status === 'skipped' ? 'skip' : ''}"></span>`).join('');
+    h += `<button class="day${d === TODAY ? ' today' : ''}" data-act="date" data-v="${d}" ${d === S.date ? 'aria-current="date"' : ''} aria-label="${longDate(d)}, ${list.length} session${list.length === 1 ? '' : 's'}">
+      <span class="dw">${WD[i]}</span><span class="dn num">${parse(d).getDate()}</span><span class="dots">${dots}</span></button>`;
+  }
+  h += `<button class="nav" data-act="wk" data-v="7" aria-label="Next week">›</button>`;
+  $('#week').innerHTML = h;
+}
+
+// ---------- check-in ----------
+function zone(v) { return v == null ? '' : v <= 2 ? 'z-g' : v <= 5 ? 'z-a' : 'z-r'; }
+function verdict(date) {
+  const c = S.checkins.get(date);
+  const vals = c ? [c.ham, c.kneeL, c.kneeR].filter(v => v != null) : [];
+  if (!vals.length) return { k: 'n', t: 'No scores yet', g: 'Do the two tests before training: 5 single-leg bridges on a box (left), 3 single-leg decline squats each side.' };
+  const worst = Math.max(...vals);
+  let prev = null;
+  const prevDates = [...S.checkins.keys()].filter(d => d < date).sort();
+  if (prevDates.length && prevDates.at(-1) >= addDays(date, -3)) { const p = S.checkins.get(prevDates.at(-1)); const pv = [p.ham, p.kneeL, p.kneeR].filter(v => v != null); if (pv.length) prev = Math.max(...pv); }
+  if (worst > 5) return { k: 'r', t: 'Red', g: 'Drop one stage on the sore tendon and message your PT. No sprinting or plyos today.' };
+  if (worst >= 3 || (prev != null && worst > prev)) return { k: 'a', t: 'Amber', g: `Keep today's loads, no progression and no max-speed work.${prev != null && worst > prev && worst < 3 ? ' Score is up from your last check.' : ''}` };
+  return { k: 'g', t: 'Green', g: 'Train as planned and progress if due.' };
+}
+function checkinCard(date) {
+  const c = S.checkins.get(date) || {};
+  const v = verdict(date);
+  const scale = key => `<div class="scale" role="group">${Array.from({ length: 11 }, (_, i) => `<button class="${zone(i)} num" data-act="ci" data-k="${key}" data-v="${i}" aria-pressed="${c[key] === i}" aria-label="${i} of 10">${i}</button>`).join('')}</div>`;
+  return `<section class="card check" aria-label="Morning check">
+    <div class="row"><h3>Morning check</h3><span class="spacer sub">pain 0–10</span></div>
+    <div class="test"><label>Hamstring, left <small>· 5 SL bridges on a box</small></label>${scale('ham')}</div>
+    <div class="grid2">
+      <div class="test"><label>Knee, left <small>· 3 decline squats</small></label>${scale('kneeL')}</div>
+      <div class="test"><label>Knee, right <small>· 3 decline squats</small></label>${scale('kneeR')}</div>
+    </div>
+    <div class="verdict ${v.k}"><b>${v.t}</b>${esc(v.g)}</div>
+  </section>`;
+}
+
+// ---------- day view ----------
+function renderDay() {
+  const list = sessionsOn(S.date);
+  const head = list.find(s => !s.lumin && s.phase);
+  let h = `<div class="shead"><h1>${longDate(S.date)}</h1>
+    <div class="sub">${head ? esc(head.phase) + (head.week ? ' · ' + esc(head.week) : '') : list.some(s => s.lumin) ? 'Logged in Lumin' : 'Nothing planned'}</div></div>`;
+  if (S.storeError) h += `<div class="banner">This browser won't let the app store data (private browsing?). Open it normally to save your training.</div>`;
+  if (S.ready && !S.sessions.size && !S.lumin.length) {
+    h += `<div class="empty"><div><b>Nothing here yet.</b></div><div class="sub">Import your plan file to load every session, and your Lumin export for your history. Both stay on this phone.</div>
+      <button class="btn primary" data-act="tab" data-v="data">Import plan and history</button></div>`;
+    $('#main').innerHTML = h; return;
+  }
+  if (S.date <= TODAY && S.date >= addDays(TODAY, -14)) h += checkinCard(S.date);
+  if (!list.length) {
+    const next = [...S.sessions.values()].filter(s => s.date > S.date).sort((a, b) => a.date.localeCompare(b.date))[0];
+    h += `<div class="empty"><div><b>Rest day, or nothing planned yet.</b></div>
+      ${next ? `<div class="sub">Next up: ${esc(longDate(next.date))}, ${esc(next.title)}</div><button class="btn primary" data-act="date" data-v="${esc(next.date)}">Go to ${esc(shortDate(next.date))}</button>` : `<div class="sub">Add a session for this day, or copy one in from another day.</div>`}
+      <button class="btn${next ? ' ghost' : ' primary'}" data-act="newSession">Add session</button></div>`;
+  } else {
+    h += `<div class="row"><h2>Sessions</h2><button class="btn ghost sm spacer" data-act="newSession">+ Add session</button></div>`;
+    for (const s of list) {
+      const { total, done } = setCount(s);
+      const groups = (s.groups || []).map(g => g.name).join(' · ');
+      const status = s.lumin ? `<span class="pill lumin">Lumin</span>` : s.status === 'completed' ? `<span class="pill done">Done</span>` : s.status === 'skipped' ? `<span class="pill skipped">Skipped</span>` : '';
+      h += `<button class="card sess" data-act="open" data-v="${esc(s.id)}">
+        <div class="row">${s.focus ? `<span class="pill ${esc(s.focus)}">${esc(s.focus)}</span>` : ''}${status}<span class="spacer sub num">${done}/${total} sets</span></div>
+        <h3>${esc(s.title)}</h3>
+        <div class="groups">${esc(groups)}</div>
+        <div class="progress" aria-hidden="true"><i style="width:${total ? Math.round(done / total * 100) : 0}%"></i></div>
+        ${s.notes ? `<div class="sub">${esc(s.notes)}</div>` : ''}
+      </button>`;
+    }
+  }
+  $('#main').innerHTML = h;
+}
+
+// ---------- session view ----------
+const GL = 'ABCDEFGHIJKLMNOP';
+function planText(it, p) {
+  if (!p) return '';
+  if (it.kind === 'run' || it.kind === 'check') return esc(p.t || '');
+  const rpe = p.rpe ? `<div class="u num">RPE ${esc(p.rpe)}</div>` : '';
+  if (it.kind === 'time') return `<b class="num">${p.sec ?? '–'}</b><span class="u"> s</span>${p.kg ? ` <span class="u">@</span> <b class="num">${fmtKg(p.kg)}</b><span class="u"> kg</span>` : rpe}`;
+  if (it.kind === 'bw') return `<b class="num">${esc(p.r ?? '–')}</b><span class="u"> reps</span>${rpe}`;
+  const r = `<b class="num">${esc(p.r ?? '–')}</b>`;
+  if (p.kg != null) return `${r}<span class="u"> × </span><b class="num">${fmtKg(p.kg)}</b><span class="u"> kg</span>`;
+  return `${r}<span class="u"> reps</span>${rpe}`;
+}
+function colHead(kind) {
+  if (kind === 'load') return `<div class="set colh"><span></span><span style="text-align:left">Plan</span><span>kg</span><span>reps</span><span>RPE</span><span></span></div>`;
+  if (kind === 'bw') return `<div class="set k-bw colh"><span></span><span style="text-align:left">Plan</span><span>reps</span><span>RPE</span><span></span></div>`;
+  if (kind === 'time') return `<div class="set k-time colh"><span></span><span style="text-align:left">Plan</span><span>kg</span><span>sec</span><span></span></div>`;
+  return '';
+}
+function setRow(s, gi, ii, it, si, st, lt) {
+  const prev = lt && lt.sets.length ? (lt.sets[si] || lt.sets.at(-1)) : null;
+  const d = st.done || {}, ok = !!d.ok, ro = s.readOnly ? 'disabled' : '';
+  const base = `${s.id}|${gi}|${ii}|${si}`;
+  const inp = (f, val, ph, mode, cls = '') => `<input id="in-${esc(s.id)}-${it.id}-${si}-${f}" class="${cls}" data-f="${f}" data-k="${esc(base)}" inputmode="${mode}" value="${esc(val ?? '')}" placeholder="${esc(ph ?? '')}" ${ro} aria-label="${f} set ${si + 1}">`;
+  const tick = `<button class="tick" data-act="tick" data-k="${esc(base)}" aria-pressed="${ok}" aria-label="Set ${si + 1} done" ${ro}>✓</button>`;
+  const p = st.plan || {};
+  if (it.kind === 'check') return `<div class="set k-check${ok ? ' ok' : ''}"><div class="plan">${planText(it, p)}</div>${tick}</div>`;
+  if (it.kind === 'run') return `<div class="set k-run${ok ? ' ok' : ''}"><span class="n num">${si + 1}</span><div class="runwrap"><div class="plan">${planText(it, p)}</div>${inp('note', d.note, 'Times, top speed, how it felt', 'text', 'txt')}</div>${tick}</div>`;
+  const n = `<span class="n num">${si + 1}</span><div class="plan">${planText(it, p)}</div>`;
+  if (it.kind === 'time') return `<div class="set k-time${ok ? ' ok' : ''}">${n}${inp('kg', fmtKg(d.kg), p.kg != null ? fmtKg(p.kg) : prev && prev.kg ? fmtKg(prev.kg) : 'BW', 'decimal')}${inp('sec', d.sec, p.sec, 'numeric')}${tick}</div>`;
+  if (it.kind === 'bw') return `<div class="set k-bw${ok ? ' ok' : ''}">${n}${inp('reps', d.reps, repsNum(p.r), 'numeric')}${inp('rpe', d.rpe, p.rpe, 'decimal')}${tick}</div>`;
+  return `<div class="set${ok ? ' ok' : ''}">${n}${inp('kg', fmtKg(d.kg), p.kg != null ? fmtKg(p.kg) : prev && prev.kg ? fmtKg(prev.kg) : 'kg', 'decimal')}${inp('reps', d.reps, repsNum(p.r), 'numeric')}${inp('rpe', d.rpe, p.rpe, 'decimal')}${tick}</div>`;
+}
+function editItem(s, gi, ii, it) {
+  const k = `${s.id}|${gi}|${ii}`;
+  const sets = it.sets.map((st, si) => {
+    const p = st.plan || {}, kk = `${k}|${si}`;
+    const f = (name, val, ph) => `<input data-pf="${name}" data-k="${esc(kk)}" value="${esc(val ?? '')}" placeholder="${ph}" aria-label="${ph} set ${si + 1}">`;
+    if (it.kind === 'run' || it.kind === 'check') return `<div class="edit-set wide"><span class="n num">${si + 1}</span>${f('t', p.t, 'Description')}<button class="x" data-act="rmSet" data-k="${esc(kk)}" aria-label="Remove set">×</button></div>`;
+    return `<div class="edit-set"><span class="n num">${si + 1}</span>${f('r', p.r, 'reps')}${f('kg', p.kg, 'kg')}${f('sec', p.sec, 'sec')}${f('rpe', p.rpe, 'RPE')}<button class="x" data-act="rmSet" data-k="${esc(kk)}" aria-label="Remove set">×</button></div>`;
+  }).join('');
+  return `<div class="card ex">
+    <div class="grid2"><label class="field">Exercise<input data-ef="name" data-k="${esc(k)}" value="${esc(it.name)}" list="exList"></label>
+    <label class="field">Logged as<select data-ef="kind" data-k="${esc(k)}">${['load', 'bw', 'time', 'run', 'check'].map(o => `<option value="${o}" ${it.kind === o ? 'selected' : ''}>${{ load: 'Weight × reps', bw: 'Reps only', time: 'Hold (sec)', run: 'Running / text', check: 'Tick only' }[o]}</option>`).join('')}</select></label></div>
+    <label class="field">Coaching note<input data-ef="note" data-k="${esc(k)}" value="${esc(it.note || '')}" placeholder="Tempo, side, cues"></label>
+    <div class="sets">${sets}</div>
+    <div class="exfoot"><button class="btn sm" data-act="addSet" data-k="${esc(k)}">+ Set</button>
+      <button class="btn sm ghost" data-act="mvEx" data-d="-1" data-k="${esc(k)}" aria-label="Move up">↑</button>
+      <button class="btn sm ghost" data-act="mvEx" data-d="1" data-k="${esc(k)}" aria-label="Move down">↓</button>
+      <button class="btn sm ghost danger spacer" data-act="rmEx" data-k="${esc(k)}">Remove exercise</button></div>
+  </div>`;
+}
+function renderSession() {
+  const s = getSession(S.open);
+  if (!s) { S.open = null; return renderDay(); }
+  const { total, done } = setCount(s);
+  const ed = S.edit && !s.readOnly;
+  let h = `<div class="row"><button class="btn ghost sm" data-act="back">‹ ${esc(shortDate(s.date))}</button>
+    ${s.readOnly ? '' : `<button class="btn sm spacer" data-act="toggleEdit" aria-pressed="${ed}">${ed ? 'Done editing' : 'Edit plan'}</button>`}</div>`;
+  h += `<div class="shead">`;
+  if (ed) {
+    h += `<label class="field">Session name<input data-sf="title" value="${esc(s.title)}"></label>
+      <div class="grid2"><label class="field">Date<input type="date" data-sf="date" value="${esc(s.date)}"></label>
+      <label class="field">Intensity<select data-sf="focus">${['HIGH', 'MOD', 'LOW'].map(o => `<option ${s.focus === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label></div>
+      <div class="grid2"><label class="field">Phase<input data-sf="phase" value="${esc(s.phase || '')}"></label><label class="field">Week<input data-sf="week" value="${esc(s.week || '')}"></label></div>
+      <label class="field">Notes<input data-sf="notes" value="${esc(s.notes || '')}"></label>`;
+  } else {
+    h += `<div class="row">${s.focus ? `<span class="pill ${esc(s.focus)}">${esc(s.focus)}</span>` : ''}${s.lumin ? '<span class="pill lumin">Lumin</span>' : ''}${s.status === 'completed' ? '<span class="pill done">Done</span>' : s.status === 'skipped' ? '<span class="pill skipped">Skipped</span>' : ''}<span class="sub">${esc(s.phase || '')}${s.week ? ' · ' + esc(s.week) : ''}</span></div>
+      <h1>${esc(s.title)}</h1>
+      ${s.notes ? `<div class="sub">${esc(s.notes)}</div>` : ''}
+      ${s.readOnly ? '<div class="readonly-note">Imported from your Lumin history. Read only.</div>' : ''}
+      <div class="row"><div class="progress" style="flex:1" aria-hidden="true"><i style="width:${total ? Math.round(done / total * 100) : 0}%"></i></div><span class="sub num">${done}/${total} sets</span></div>`;
+  }
+  h += `</div>`;
+  (s.groups || []).forEach((g, gi) => {
+    h += `<section class="grp"><div class="grp-h"><span class="tag">${GL[gi] || '·'}</span>${ed ? `<input class="grp-name" data-gf="name" data-k="${esc(s.id)}|${gi}" value="${esc(g.name)}" aria-label="Block name"><button class="btn sm ghost danger" data-act="rmGrp" data-k="${esc(s.id)}|${gi}">Remove</button>` : `<h2>${esc(g.name)}</h2>`}</div>`;
+    (g.items || []).forEach((it, ii) => {
+      if (ed) { h += editItem(s, gi, ii, it); return; }
+      const lt = (it.kind === 'check' || it.kind === 'run') ? null : lastTime(it.name, s.date, s.id);
+      const noteOpen = it.comment || NOTES.has(s.id + it.id);
+      h += `<div class="card ex"><div><div class="ex-name">${esc(it.name)}</div>${it.note ? `<div class="ex-note">${esc(it.note)}</div>` : ''}
+        ${lt ? `<div class="last num">Last time, ${esc(shortDate(lt.date))}: <b>${lt.sets.slice(0, 5).map(x => esc(fmtDone(x, lt.kind))).join(' · ')}</b></div>` : ''}</div>
+        ${colHead(it.kind)}<div class="sets">${it.sets.map((st, si) => setRow(s, gi, ii, it, si, st, lt)).join('')}</div>
+        ${s.readOnly ? (it.sets.some(x => x.done && x.done.note) ? `<div class="ex-note">${it.sets.filter(x => x.done && x.done.note).map(x => esc(x.done.note)).join(' · ')}</div>` : '') : `<div class="exfoot"><button class="btn sm ghost" data-act="addSet" data-k="${esc(s.id)}|${gi}|${ii}">+ Set</button>${noteOpen ? '' : `<button class="btn sm ghost" data-act="note" data-k="${esc(s.id + it.id)}">+ Note</button>`}</div>
+        ${noteOpen ? `<textarea class="note-in" id="note-${esc(s.id + it.id)}" data-cf="comment" data-k="${esc(s.id)}|${gi}|${ii}" rows="1" placeholder="Note for this exercise" aria-label="Note for ${esc(it.name)}">${esc(it.comment || '')}</textarea>` : ''}`}
+      </div>`;
+    });
+    if (ed) h += `<button class="btn sm" data-act="addEx" data-k="${esc(s.id)}|${gi}">+ Exercise in ${esc(g.name)}</button>`;
+    h += `</section>`;
+  });
+  if (ed) {
+    h += `<div class="row"><button class="btn" data-act="addGrp">+ Block</button></div>
+      <div class="card"><h2>Copy or remove</h2>
+      <div class="row"><input type="date" id="dupDate" value="${esc(addDays(s.date, 7))}" class="btn" aria-label="Copy to date"><button class="btn" data-act="dup">Copy plan to this date</button></div>
+      <button class="btn danger" data-act="del">Delete session</button></div>`;
+  } else if (!s.readOnly) {
+    h += `<section class="card finish"><h2>Finish</h2>
+      <div class="field">Session RPE<div class="rpe">${Array.from({ length: 10 }, (_, i) => `<button class="num" data-act="srpe" data-v="${i + 1}" aria-pressed="${s.sessionRpe === i + 1}">${i + 1}</button>`).join('')}</div></div>
+      <div class="grid2"><label class="field">Minutes<input id="min-${esc(s.id)}" data-sf="minutes" inputmode="numeric" value="${esc(s.minutes ?? '')}"></label><span></span></div>
+      <label class="field">How did it go?<textarea data-sf="comment" rows="2">${esc(s.comment || '')}</textarea></label>
+      <div class="row">${s.status === 'completed' ? `<button class="btn" data-act="status" data-v="planned">Reopen</button>` : `<button class="btn primary" data-act="status" data-v="completed">Finish session</button>`}
+      ${s.status === 'skipped' ? `<button class="btn ghost" data-act="status" data-v="planned">Unskip</button>` : s.status !== 'completed' ? `<button class="btn ghost" data-act="status" data-v="skipped">Skip session</button>` : ''}</div>
+    </section>`;
+  }
+  h += `<datalist id="exList">${[...IDX.keys()].sort().map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+  $('#main').innerHTML = h;
+}
+
+// ---------- progress view ----------
+function seriesFor(name) {
+  return (IDX.get(name) || []).map(e => {
+    const kgs = e.sets.map(x => x.kg).filter(v => v != null && v > 0);
+    if (kgs.length) { const top = Math.max(...kgs); const reps = Math.max(...e.sets.filter(x => x.kg === top).map(x => x.reps || 0)); return { date: e.date, v: top, reps, unit: 'kg', e }; }
+    const secs = e.sets.map(x => x.sec).filter(v => v != null);
+    if (secs.length) return { date: e.date, v: Math.max(...secs), unit: 's', e };
+    const reps = e.sets.map(x => x.reps).filter(v => v != null);
+    return reps.length ? { date: e.date, v: Math.max(...reps), unit: 'reps', e } : null;
+  }).filter(Boolean);
+}
+function lineChart(pts, unit) {
+  const W = 700, H = 240, L = 44, R = 16, T = 18, B = 30;
+  if (!pts.length) return '';
+  const t = s => parse(s).getTime();
+  const x0 = t(pts[0].date), x1 = Math.max(t(pts.at(-1).date), x0 + 864e5 * 7);
+  const vs = pts.map(p => p.v), vmax = Math.max(...vs), vmin = Math.min(...vs);
+  const lo = unit === 'kg' ? Math.max(0, Math.floor((vmin - (vmax - vmin) * 0.15 - 5) / 10) * 10) : 0;
+  const hi = Math.ceil((vmax + (vmax - lo) * 0.1 + 1) / 10) * 10;
+  const X = d => L + (t(d) - x0) / (x1 - x0) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const step = (hi - lo) / 4;
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = lo + step * i; g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${Math.round(v)}</text>`; }
+  const d = parse(pts[0].date); d.setDate(1); d.setMonth(d.getMonth() + 1);
+  const months = []; while (d.getTime() <= x1) { months.push(iso(d)); d.setMonth(d.getMonth() + 1); }
+  const every = Math.ceil(months.length / 7);
+  months.forEach((m, i) => { if (i % every) return; g += `<text x="${X(m)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="var(--muted)">${MO[parse(m).getMonth()]}</text><line x1="${X(m)}" x2="${X(m)}" y1="${H - B}" y2="${H - B + 4}" stroke="var(--line)"/>`; });
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.date).toFixed(1)} ${Y(p.v).toFixed(1)}`).join('');
+  const bi = vs.indexOf(vmax);
+  const dots = pts.map((p, i) => `<circle cx="${X(p.date)}" cy="${Y(p.v)}" r="${i === bi ? 5 : 3.2}" fill="${i === bi ? 'var(--accent)' : 'var(--surface)'}" stroke="var(--accent)" stroke-width="1.6"><title>${shortDate(p.date)}: ${fmtKg(p.v)} ${p.unit}${p.reps ? ' × ' + p.reps : ''}</title></circle>`).join('');
+  const bx = X(pts[bi].date), anchor = bx > W - 120 ? 'end' : 'start', off = anchor === 'end' ? -8 : 8;
+  const label = `<text x="${bx + off}" y="${Y(vmax) - 9}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="var(--ink)">Best ${fmtKg(vmax)} ${unit}${pts[bi].reps ? ' × ' + pts[bi].reps : ''}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Top set over time, best ${fmtKg(vmax)} ${unit}">${g}<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>${dots}${label}</svg>`;
+}
+function checkinChart() {
+  const days = 42, start = addDays(TODAY, -days + 1);
+  const W = 700, H = 170, L = 30, R = 12, T = 12, B = 26;
+  const X = i => L + i / (days - 1) * (W - L - R), Y = v => T + (1 - v / 10) * (H - T - B);
+  const ser = [['ham', 'Hamstring L', 'var(--accent)'], ['kneeL', 'Knee L', 'var(--warn)'], ['kneeR', 'Knee R', 'var(--muted)']];
+  let any = false;
+  let g = `<rect x="${L}" y="${Y(10)}" width="${W - L - R}" height="${Y(5.5) - Y(10)}" fill="var(--bad-soft)"/><rect x="${L}" y="${Y(5.5)}" width="${W - L - R}" height="${Y(2.5) - Y(5.5)}" fill="var(--warn-soft)"/><rect x="${L}" y="${Y(2.5)}" width="${W - L - R}" height="${Y(0) - Y(2.5)}" fill="var(--good-soft)"/>`;
+  [0, 2, 5, 10].forEach(v => { g += `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`; });
+  for (let i = 0; i < days; i += 7) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${shortDate(addDays(start, i))}</text>`;
+  for (const [k, , col] of ser) {
+    let p = '', pts = '';
+    for (let i = 0; i < days; i++) { const c = S.checkins.get(addDays(start, i)); if (c && c[k] != null) { any = true; p += `${p ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(c[k]).toFixed(1)}`; pts += `<circle cx="${X(i)}" cy="${Y(c[k])}" r="2.8" fill="${col}"><title>${shortDate(addDays(start, i))}: ${c[k]}/10</title></circle>`; } }
+    if (p) g += `<path d="${p}" fill="none" stroke="${col}" stroke-width="1.8"/>${pts}`;
+  }
+  if (!any) return `<div class="empty"><div>No morning checks in the last 6 weeks.</div><div class="sub">Score the two tests on the Day view each morning; the trend shows up here.</div></div>`;
+  const legend = ser.map(([, n, c]) => `<span class="row" style="gap:5px"><span style="width:12px;height:3px;background:${c};display:inline-block;border-radius:2px"></span>${n}</span>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Morning pain scores, last 6 weeks">${g}</svg><div class="row sub" style="gap:14px">${legend}</div>`;
+}
+function renderProgress() {
+  const names = [...IDX.keys()].sort((a, b) => (IDX.get(b).length - IDX.get(a).length) || a.localeCompare(b));
+  if (!IDX.has(S.progEx) && names.length) S.progEx = names[0];
+  const pts = seriesFor(S.progEx);
+  const unit = pts.length ? pts.at(-1).unit : 'kg';
+  const best = pts.length ? pts.reduce((a, b) => b.v > a.v ? b : a) : null, last = pts.at(-1);
+  const e1 = best && best.unit === 'kg' && best.reps ? best.v * (1 + Math.min(best.reps, 12) / 30) : null;
+  const completed = [...S.sessions.values()].filter(s => s.status === 'completed').length;
+  let h = `<div class="shead"><h1>Progress</h1><div class="sub">Lumin history plus everything logged here. ${completed} session${completed === 1 ? '' : 's'} finished in this log.</div></div>
+  <section class="card"><label class="field">Exercise<input id="progEx" list="progList" value="${esc(S.progEx)}" autocomplete="off"></label>
+    <datalist id="progList">${names.map(n => `<option value="${esc(n)}">${IDX.get(n).length} sessions</option>`).join('')}</datalist>`;
+  if (!pts.length) h += `<div class="empty"><div>No logged sets for this exercise yet.</div></div>`;
+  else {
+    h += `<div class="stats"><div class="stat"><div class="v num">${fmtKg(best.v)}<span class="sub"> ${unit}${best.reps ? ' × ' + best.reps : ''}</span></div><div class="l">Best, ${shortDate(best.date)}</div></div>
+      <div class="stat"><div class="v num">${fmtKg(last.v)}<span class="sub"> ${unit}${last.reps ? ' × ' + last.reps : ''}</span></div><div class="l">Latest, ${shortDate(last.date)}</div></div>
+      <div class="stat"><div class="v num">${e1 ? Math.round(e1) : pts.length}<span class="sub"> ${e1 ? 'kg' : ''}</span></div><div class="l">${e1 ? 'Estimated 1RM' : 'Sessions'}</div></div></div>
+      ${lineChart(pts, unit)}
+      <div class="tbl"><table><thead><tr><th>Date</th><th>Sets</th></tr></thead><tbody>${pts.slice(-8).reverse().map(p => `<tr><td>${shortDate(p.date)}</td><td>${p.e.sets.map(x => esc(fmtDone(x, p.e.kind))).join(' · ')}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  h += `</section><section class="card"><h2>Morning checks, last 6 weeks</h2>${checkinChart()}</section>`;
+  $('#main').innerHTML = h;
+}
+
+// ---------- data view ----------
+function renderData() {
+  const planned = [...S.sessions.values()];
+  const range = planned.length ? `${shortDate(planned.map(s => s.date).sort()[0])} – ${shortDate(planned.map(s => s.date).sort().at(-1))}` : '–';
+  const installSteps = isIOS()
+    ? `<ol class="steps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button.</li><li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open Training Log from your home screen from now on.</li></ol>`
+    : `<ol class="steps"><li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu.</li><li>Choose <b>Install app</b> (or <b>Add to Home screen</b>).</li><li>Open Training Log from your home screen from now on.</li></ol>`;
+  let h = `<div class="shead"><h1>Your data</h1><div class="sub">Everything is stored on this phone only. Nothing is sent anywhere.</div></div>`;
+  if (!standalone()) h += `<section class="card"><h2>Install on your phone</h2>${installSteps}<div class="sub">Installed apps keep their data safely. In a normal browser tab the phone may clear it after a few weeks of not opening it.</div></section>`;
+  h += `<section class="card"><h2>On this phone</h2><dl class="kv">
+      <dt>Planned sessions</dt><dd>${planned.length} (${range})</dd>
+      <dt>Finished</dt><dd>${planned.filter(s => s.status === 'completed').length}</dd>
+      <dt>Lumin history</dt><dd>${S.lumin.length ? `${S.lumin.length} sessions, ${shortDate(S.lumin[0].date)} – ${shortDate(S.lumin.at(-1).date)}` : 'Not imported'}</dd>
+      <dt>Morning checks</dt><dd>${S.checkins.size}</dd>
+      <dt>Last backup</dt><dd>${S.meta.lastBackup ? shortDate(S.meta.lastBackup.slice(0, 10)) : 'Never'}</dd>
+      <dt>Storage</dt><dd>${S.persisted === true ? 'Protected from clean-up' : S.persisted === false ? 'Can be cleared by the phone. Install the app.' : 'Unknown'}</dd>
+    </dl></section>
+    <section class="card"><h2>Import</h2><div class="data-actions">
+      <button class="btn" data-act="pick" data-v="plan">Plan file <span>.json from your PT or Claude</span></button>
+      <button class="btn" data-act="pick" data-v="lumin">Lumin export <span>Session set export .csv</span></button>
+      <button class="btn" data-act="pick" data-v="restore">Restore a backup <span>.json</span></button>
+    </div><div class="sub">Importing a plan adds new sessions and updates planned ones. Sessions you've already logged are never overwritten.</div></section>
+    <section class="card"><h2>Back up and export</h2><div class="data-actions">
+      <button class="btn primary" data-act="backup">Back up everything <span style="color:inherit;opacity:.8">.json</span></button>
+      <button class="btn" data-act="export" data-v="log">Logged sets as CSV <span>for your PT</span></button>
+      <button class="btn" data-act="export" data-v="all">CSV including Lumin history</button>
+    </div><div class="sub">If you lose or reset the phone, the data goes with it. Back up every couple of weeks and save the file to iCloud Drive or Google Drive.</div></section>
+    <section class="card"><h2>Start over</h2><button class="btn danger" data-act="wipe">Delete all data on this phone</button></section>
+    <input type="file" id="filePlan" class="file-in" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+    <input type="file" id="fileLumin" class="file-in" accept=".csv,text/csv" tabindex="-1" aria-hidden="true">
+    <input type="file" id="fileRestore" class="file-in" accept=".json,application/json" tabindex="-1" aria-hidden="true">`;
+  $('#main').innerHTML = h;
+}
+async function saveFile(name, text, type) {
+  const blob = new Blob([text], { type });
+  try {
+    const file = new File([blob], name, { type });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && /iphone|ipad|android/i.test(navigator.userAgent)) { await navigator.share({ files: [file], title: name }); return true; }
+  } catch (e) { if (e && e.name === 'AbortError') return false; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  return true;
+}
+async function importPlan(obj) {
+  const list = Array.isArray(obj) ? obj : obj && Array.isArray(obj.sessions) ? obj.sessions : null;
+  if (!list) throw new Error('That file has no sessions in it.');
+  let added = 0, updated = 0, kept = 0, removed = 0; const writes = [], dels = [];
+  const ids = new Set(list.map(x => x && x.id).filter(Boolean));
+  const rng = obj && obj.replace && obj.replace.from && obj.replace.to ? obj.replace : null;
+  if (rng) for (const cur of [...S.sessions.values()]) {
+    if (cur.date >= rng.from && cur.date <= rng.to && !ids.has(cur.id) && !hasLogged(cur) && cur.status === 'planned') { S.sessions.delete(cur.id); dels.push(cur.id); removed++; }
+  }
+  for (const raw of list) {
+    if (!raw || !raw.date || !raw.title) continue;
+    const id = raw.id || `${raw.date}-${uidGen()}`;
+    const cur = S.sessions.get(id);
+    if (cur && (hasLogged(cur) || cur.status !== 'planned')) { kept++; continue; }
+    const s = { ...clone(raw), id, status: raw.status || 'planned' };
+    s.groups = (s.groups || []).filter(g => g && Array.isArray(g.items)).map(g => ({ ...g, items: g.items.filter(i => i && Array.isArray(i.sets)) }));
+    S.sessions.set(id, s); writes.push(s); cur ? updated++ : added++;
+  }
+  await idb.write(['sessions'], os => { dels.forEach(id => os('sessions').delete(id)); writes.forEach(s => os('sessions').put(s)); });
+  return `${added} added, ${updated} updated${removed ? `, ${removed} old ones removed` : ''}${kept ? `, ${kept} already logged and left alone` : ''}`;
+}
+async function importLuminCSV(text) {
+  const raw = luminFromCSV(text);
+  if (!raw.length) throw new Error('No sessions found in that file.');
+  await idb.write(['history'], os => { os('history').clear(); raw.forEach(r => os('history').put(r)); });
+  S.lumin = luminToSessions(raw);
+  return `${raw.length} Lumin sessions imported`;
+}
+async function restore(obj) {
+  if (!obj || obj.type !== 'training-log-backup') throw new Error('That is not a Training Log backup file.');
+  await idb.write(['sessions', 'checkins', 'history'], os => {
+    ['sessions', 'checkins', 'history'].forEach(n => os(n).clear());
+    (obj.sessions || []).forEach(s => os('sessions').put(s));
+    (obj.checkins || []).forEach(c => os('checkins').put(c));
+    (obj.history || []).forEach(h => os('history').put(h));
+  });
+  await loadAll();
+  return `Restored ${obj.sessions?.length || 0} sessions and ${obj.checkins?.length || 0} morning checks`;
+}
+async function backup() {
+  const history = await idb.all('history');
+  const data = { type: 'training-log-backup', version: 1, exportedAt: new Date().toISOString(), sessions: [...S.sessions.values()], checkins: [...S.checkins.values()], history };
+  const ok = await saveFile(`training-log-backup-${TODAY}.json`, JSON.stringify(data), 'application/json');
+  if (ok) { S.meta.lastBackup = data.exportedAt; idb.put('meta', { k: 'lastBackup', v: data.exportedAt }).catch(() => {}); if (S.view === 'data') renderData(); }
+}
+async function exportCsv(includeLumin) {
+  const rows = [['Source', 'Date', 'Session Name', 'Phase', 'Week', 'Status', 'Group', 'Exercise Name', 'Set Number', 'Reps Planned', 'Weight Planned (kg)', 'Duration Planned (s)', 'Weight Lifted (kg)', 'Reps Completed', 'Duration Actual (s)', 'RPE', 'Set Done', 'Set Comments', 'Exercise Note', 'Session RPE', 'Minutes']];
+  const list = [...S.sessions.values(), ...(includeLumin ? S.lumin : [])].sort((a, b) => a.date.localeCompare(b.date));
+  for (const s of list) for (const g of s.groups || []) for (const it of g.items || []) it.sets.forEach((st, i) => {
+    const p = st.plan || {}, d = st.done || {};
+    rows.push([s.lumin ? 'Lumin' : 'Log', s.date, s.title, s.phase || '', s.week || '', s.status, g.name, it.name, i + 1, p.r ?? p.t ?? '', p.kg ?? '', p.sec ?? '', d.kg ?? '', d.reps ?? '', d.sec ?? '', d.rpe ?? '', d.ok ? 'yes' : 'no', d.note ?? '', it.comment ?? '', s.sessionRpe ?? '', s.minutes ?? '']);
+  });
+  const csv = rows.map(r => r.map(c => { const x = String(c); return /[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; }).join(',')).join('\n');
+  await saveFile(`training-log-${TODAY}.csv`, csv, 'text/csv');
+}
+
+// ---------- render ----------
+function render() {
+  renderWeek();
+  for (const [id, v] of [['tabDay', 'day'], ['tabProg', 'progress'], ['tabData', 'data']]) $('#' + id).setAttribute('aria-pressed', S.view === v);
+  if (S.view === 'progress') renderProgress();
+  else if (S.view === 'data') renderData();
+  else if (S.open) renderSession();
+  else renderDay();
+}
+function rerenderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
+
+// ---------- interactions ----------
+function ref(k) {
+  const [id, gi, ii, si] = k.split('|');
+  const s = getSession(id); if (!s || s.readOnly) return {};
+  return { id, s, gi: +gi, ii: +ii, si: +si };
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const act = b.dataset.act, v = b.dataset.v, k = b.dataset.k;
+  if (act === 'tab') { S.view = v; if (v !== 'progress') { S.open = null; S.edit = false; } render(); window.scrollTo(0, 0); return; }
+  if (act === 'wk') { S.date = addDays(S.date, +v); S.open = null; S.view = 'day'; render(); return; }
+  if (act === 'date') { S.date = v; S.open = null; S.view = 'day'; S.edit = false; render(); return; }
+  if (act === 'open') { S.open = v; S.edit = false; render(); window.scrollTo(0, 0); return; }
+  if (act === 'back') { S.open = null; S.edit = false; render(); return; }
+  if (act === 'toggleEdit') { S.edit = !S.edit; rerenderKeepScroll(); return; }
+  if (act === 'note') { NOTES.add(k); rerenderKeepScroll(); const n = document.getElementById('note-' + k); if (n) n.focus(); return; }
+  if (act === 'ci') {
+    const c = { ...(S.checkins.get(S.date) || {}), date: S.date };
+    c[b.dataset.k] = c[b.dataset.k] === +v ? null : +v;
+    saveCheckin(S.date, c); rerenderKeepScroll(); return;
+  }
+  if (act === 'newSession') {
+    const id = `${S.date}-${uidGen()}`;
+    S.sessions.set(id, { id, date: S.date, title: 'New session', focus: 'MOD', phase: '', week: '', status: 'planned', notes: null, groups: [{ name: 'FORCE', items: [] }], sessionRpe: null, minutes: null, comment: null, order: 9 });
+    touch(id); S.open = id; S.edit = true; render(); window.scrollTo(0, 0); return;
+  }
+  if (act === 'pick') { const el = $({ plan: '#filePlan', lumin: '#fileLumin', restore: '#fileRestore' }[v]); if (el) { el.value = ''; el.click(); } return; }
+  if (act === 'backup') { backup(); return; }
+  if (act === 'export') { exportCsv(v === 'all'); return; }
+  if (act === 'wipe') {
+    if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Tap again to delete everything'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Delete all data on this phone'; } }, 4000); return; }
+    await idb.write(['sessions', 'checkins', 'history', 'meta'], os => ['sessions', 'checkins', 'history', 'meta'].forEach(n => os(n).clear()));
+    S.sessions.clear(); S.checkins.clear(); S.lumin = []; S.meta = {}; buildIndex(); render(); toast('All data deleted'); return;
+  }
+  const sid = S.open; if (!sid) return;
+  if (act === 'tick') {
+    const { id, s, gi, ii, si } = ref(k); if (!s) return;
+    const it = s.groups[gi].items[ii], st = it.sets[si], p = st.plan || {};
+    const d = st.done ? { ...st.done } : {};
+    if (!d.ok) {
+      const lt = lastTime(it.name, s.date, s.id), prev = lt && lt.sets.length ? (lt.sets[si] || lt.sets.at(-1)) : null;
+      if (it.kind === 'load' && d.kg == null) d.kg = p.kg ?? (prev && prev.kg ? prev.kg : null);
+      if (it.kind === 'time' && d.kg == null && p.kg == null && prev && prev.kg) d.kg = prev.kg;
+      if ((it.kind === 'load' || it.kind === 'bw') && d.reps == null) d.reps = repsNum(p.r);
+      if (it.kind === 'time') { if (d.sec == null) d.sec = p.sec ?? null; if (d.kg == null && p.kg != null) d.kg = p.kg; }
+      d.ok = true;
+      if (s.status === 'planned') s.status = 'in_progress';
+    } else d.ok = false;
+    st.done = d; touch(id); buildIndex(); rerenderKeepScroll(); return;
+  }
+  if (act === 'addSet') {
+    const { id, s, gi, ii } = ref(k); if (!s) return;
+    const it = s.groups[gi].items[ii]; const lastSet = it.sets.at(-1);
+    it.sets.push({ plan: lastSet ? clone(lastSet.plan) : (it.kind === 'run' || it.kind === 'check' ? { t: '' } : { r: 8 }), done: null });
+    touch(id); rerenderKeepScroll(); return;
+  }
+  if (act === 'rmSet') { const { id, s, gi, ii, si } = ref(k); s.groups[gi].items[ii].sets.splice(si, 1); touch(id); rerenderKeepScroll(); return; }
+  if (act === 'rmEx') { const { id, s, gi, ii } = ref(k); s.groups[gi].items.splice(ii, 1); touch(id); rerenderKeepScroll(); return; }
+  if (act === 'mvEx') {
+    const { id, s, gi, ii } = ref(k); const arr = s.groups[gi].items, j = ii + Number(b.dataset.d);
+    if (j < 0 || j >= arr.length) return; [arr[ii], arr[j]] = [arr[j], arr[ii]]; touch(id); rerenderKeepScroll(); return;
+  }
+  if (act === 'addEx') {
+    const { id, s, gi } = ref(k);
+    s.groups[gi].items.push({ id: uidGen(), name: '', kind: 'load', note: null, sets: [1, 2, 3].map(() => ({ plan: { r: 8, kg: null }, done: null })) });
+    touch(id); rerenderKeepScroll();
+    const ins = document.querySelectorAll('[data-ef="name"]'); const last = ins[ins.length - 1]; if (last) last.focus();
+    return;
+  }
+  const s = getSession(sid); if (!s || s.readOnly) return;
+  if (act === 'addGrp') { s.groups.push({ name: 'NEW BLOCK', items: [] }); touch(sid); rerenderKeepScroll(); return; }
+  if (act === 'rmGrp') { const { gi } = ref(k); s.groups.splice(gi, 1); touch(sid); rerenderKeepScroll(); return; }
+  if (act === 'srpe') { s.sessionRpe = s.sessionRpe === +v ? null : +v; touch(sid); rerenderKeepScroll(); return; }
+  if (act === 'status') { s.status = v; touch(sid); rerenderKeepScroll(); toast(v === 'completed' ? 'Session finished' : v === 'skipped' ? 'Marked as skipped' : 'Reopened'); return; }
+  if (act === 'dup') {
+    const to = $('#dupDate').value; if (!to) return;
+    const id = `${to}-${uidGen()}`; const c = clone(s);
+    Object.assign(c, { id, date: to, status: 'planned', sessionRpe: null, minutes: null, comment: null });
+    for (const g of c.groups) for (const it of g.items) { it.id = uidGen(); it.comment = null; for (const st of it.sets) st.done = null; }
+    S.sessions.set(id, c); touch(id); toast(`Copied to ${shortDate(to)}`); return;
+  }
+  if (act === 'del') {
+    if (b.dataset.confirm !== '1') { b.dataset.confirm = '1'; b.textContent = 'Tap again to delete'; setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ''; b.textContent = 'Delete session'; } }, 3000); return; }
+    S.sessions.delete(sid); clearTimeout(timers.get(sid)); timers.delete(sid); save(sid); buildIndex(); S.open = null; S.edit = false; render(); toast('Session deleted'); return;
+  }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'progEx') { if (IDX.has(t.value)) { S.progEx = t.value; pref.set('progEx', t.value); render(); const el = $('#progEx'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
+  const sid = S.open; if (!sid) return;
+  if (t.dataset.f) {
+    const { id, s, gi, ii, si } = ref(t.dataset.k); if (!s) return;
+    const st = s.groups[gi].items[ii].sets[si]; st.done = { ...(st.done || {}) };
+    st.done[t.dataset.f] = t.dataset.f === 'note' ? t.value : numOrNull(t.value);
+    touch(id); return;
+  }
+  if (t.dataset.cf) { const { id, s, gi, ii } = ref(t.dataset.k); if (!s) return; s.groups[gi].items[ii].comment = t.value || null; touch(id); return; }
+  if (t.dataset.pf) {
+    const { id, s, gi, ii, si } = ref(t.dataset.k); if (!s) return; const p = s.groups[gi].items[ii].sets[si].plan ||= {};
+    const f = t.dataset.pf; p[f] = f === 't' ? t.value : f === 'r' ? (t.value === '' ? null : (/^\d+$/.test(t.value) ? +t.value : t.value)) : numOrNull(t.value);
+    touch(id); return;
+  }
+  if (t.dataset.ef && t.tagName === 'INPUT') { const { id, s, gi, ii } = ref(t.dataset.k); if (!s) return; s.groups[gi].items[ii][t.dataset.ef] = t.value || (t.dataset.ef === 'name' ? '' : null); touch(id); return; }
+  if (t.dataset.gf) { const { id, s, gi } = ref(t.dataset.k); if (!s) return; s.groups[gi].name = t.value; touch(id); return; }
+  if (t.dataset.sf && t.dataset.sf !== 'date' && t.tagName !== 'SELECT') {
+    const s = getSession(sid); if (!s || s.readOnly) return;
+    const f = t.dataset.sf; s[f] = f === 'minutes' ? numOrNull(t.value) : f === 'title' ? t.value : (t.value || null);
+    touch(sid); return;
+  }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.classList.contains('file-in')) {
+    const f = t.files && t.files[0]; if (!f) return;
+    try {
+      const text = await f.text(); let msg;
+      if (t.id === 'fileLumin') msg = await importLuminCSV(text);
+      else { let obj; try { obj = JSON.parse(text); } catch { throw new Error('That file is not valid JSON.'); } msg = t.id === 'filePlan' ? await importPlan(obj) : await restore(obj); }
+      buildIndex(); askPersist(); render(); toast(msg);
+    } catch (err) { toast(err && err.message ? err.message : 'Import failed.'); }
+    return;
+  }
+  const sid = S.open; if (!sid) return;
+  const s = getSession(sid); if (!s || s.readOnly) return;
+  if (t.dataset.ef === 'kind') { const { gi, ii } = ref(t.dataset.k); const it = s.groups[gi].items[ii]; it.kind = t.value; if (t.value === 'run' || t.value === 'check') it.sets.forEach(st => { st.plan = { t: st.plan?.t || '' }; }); touch(sid); rerenderKeepScroll(); return; }
+  if (t.dataset.sf === 'focus') { s.focus = t.value; touch(sid); return; }
+  if (t.dataset.sf === 'date' && t.value) { s.date = t.value; S.date = t.value; touch(sid); renderWeek(); return; }
+});
+
+// ---------- boot ----------
+async function askPersist() {
+  try { if (navigator.storage && navigator.storage.persist) { S.persisted = await navigator.storage.persisted(); if (!S.persisted) S.persisted = await navigator.storage.persist(); } } catch {}
+}
+async function loadAll() {
+  const [sessions, checkins, history, meta] = await Promise.all(['sessions', 'checkins', 'history', 'meta'].map(n => idb.all(n)));
+  S.sessions = new Map(sessions.map(s => [s.id, s]));
+  S.checkins = new Map(checkins.map(c => [c.date, c]));
+  S.lumin = luminToSessions(history);
+  S.meta = Object.fromEntries(meta.map(m => [m.k, m.v]));
+  buildIndex();
+}
+async function boot() {
+  render();
+  try { await idb.open(); await loadAll(); }
+  catch { S.storeError = true; }
+  S.ready = true;
+  if (!S.storeError && !S.sessions.size && !S.lumin.length) S.view = 'data';
+  try { S.persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : null; } catch {}
+  if (S.sessions.size && !S.persisted && standalone()) askPersist();
+  render();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+boot();
+})();
+
+</script>
+</body>
+</html>
